@@ -43,15 +43,15 @@ CREATE OR REPLACE PACKAGE BODY task_search_pkg AS
         v_offset NUMBER;
     BEGIN
         v_term   := '%' || LOWER(NVL(p_search_term, '')) || '%';
-        v_offset := (p_page - 1) * p_page_size;
+        v_offset := (GREATEST(NVL(p_page, 1), 1) - 1) * GREATEST(NVL(p_page_size, 10), 1);
 
         -- Total count for pagination metadata
         SELECT COUNT(*)
           INTO p_total_count
           FROM tasks
          WHERE archived = 0
-           AND LOWER(title) LIKE v_term
-            OR LOWER(description) LIKE v_term
+           AND (LOWER(title) LIKE v_term
+            OR LOWER(description) LIKE v_term)
            AND (p_status IS NULL OR status = p_status);
 
         -- Paginated results using ROWNUM (pre-12c pattern)
@@ -64,8 +64,8 @@ CREATE OR REPLACE PACKAGE BODY task_search_pkg AS
                                assignee, created_at
                           FROM tasks
                          WHERE archived = 0
-                           AND LOWER(title) LIKE v_term
-                            OR LOWER(description) LIKE v_term
+                           AND (LOWER(title) LIKE v_term
+                            OR LOWER(description) LIKE v_term)
                            AND (p_status IS NULL OR status = p_status)
                          ORDER BY created_at DESC
                     ) t
